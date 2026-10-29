@@ -110,7 +110,7 @@ The central design decision is simple and non-negotiable: a retrieval provider m
 
 The roadmap turns each boundary into a small, reviewable contribution:
 
-The [reference-slice decision](docs/architecture/0001-reference-slice.md) sets the first implementation boundary: a local Python service with fake identities, deterministic documents, and a tested deny-before-retrieval rule. It does not make the public demo a secure application.
+The [reference-slice decision](docs/architecture/0001-reference-slice.md) sets the first implementation boundary. The local Python reference service now provides fake identities, deterministic fixtures, and a validated request/response seam. Deny-before-retrieval is a separate follow-up slice; the service skeleton does not make the public demo or backend a secure application.
 
 The larger work remains in [authentication](https://github.com/DineshDhanoki/Enterprise-RAG-with-RBAC/issues/4), [policy](https://github.com/DineshDhanoki/Enterprise-RAG-with-RBAC/issues/5), [ingestion](https://github.com/DineshDhanoki/Enterprise-RAG-with-RBAC/issues/6), [retrieval](https://github.com/DineshDhanoki/Enterprise-RAG-with-RBAC/issues/7), [evaluation](https://github.com/DineshDhanoki/Enterprise-RAG-with-RBAC/issues/9), and [audit](https://github.com/DineshDhanoki/Enterprise-RAG-with-RBAC/issues/10). These are roadmap umbrellas to split into reviewable PRs. [Accessibility](https://github.com/DineshDhanoki/Enterprise-RAG-with-RBAC/issues/11) also needs focused tasks. A `good first issue` is a smaller task with a concrete local verification path.
 
@@ -152,10 +152,20 @@ python3 -m http.server 8000
 
 Then open <http://127.0.0.1:8000>.
 
+To run the local reference service and its tests (Python 3.12, standard library only):
+
+```bash
+python3.12 -m unittest discover -s tests -v
+python3.12 -m reference_service.server
+```
+
+The service listens only on `127.0.0.1:8001`. Its three personas and documents are fake; no authorization or retrieval is active. See [the service guide](docs/reference-service.md) for the request contract and limitations.
+
 Before opening a pull request:
 
 ```bash
 python3 tests/smoke_test.py
+python3.12 -m unittest discover -s tests -v
 node --check app.js
 ```
 
@@ -172,6 +182,19 @@ The static demo is the right place for UI and documentation contributions. Backe
 - **A public changelog** records the project’s evolution.
 
 The project is early. That is not a weakness to hide; it is the opportunity. You can help decide what the first trustworthy, permission-aware RAG reference implementation should become.
+
+## Local audit trail
+
+The local Python reference includes a metadata-only JSONL audit event writer and a read-only viewer. Query requests can emit a search event when an `X-Request-ID` UUID header is supplied. The same ID can correlate later policy-decision and citation events without storing prompts, answers, or snippets.
+
+Run the audit tests and viewer (Python 3.12):
+
+```bash
+python3.12 -m unittest discover -s tests -v
+python3.12 -m reference_service.audit_viewer --file .local/audit.jsonl
+```
+
+The viewer binds to `127.0.0.1:8010` and filters by actor, outcome, collection, and request ID. See [the audit trail guide](docs/audit-trail.md) for the event contract, redaction limits, threat model, retention, export, and deletion considerations. Do not commit local audit logs. This local reference is not a tamper-proof or production audit system.
 
 ## Changelog and status
 
